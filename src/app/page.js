@@ -2,7 +2,8 @@
 import axios from "axios";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-
+import toastr from "toastr";
+import "toastr/build/toastr.css"
 export default function Home() {
    const [response, setResponse] = useState([]);
    const [orders, setOrders] = useState([
@@ -27,6 +28,7 @@ export default function Home() {
          };
          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/match`, data);
          if (response.data) {
+            toastr.success('Data Submitted Successfully');
             setResponse(response.data);
          }
       } catch (error) {
@@ -40,12 +42,34 @@ export default function Home() {
             status: true,
          };
          const response = await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/status/${id}`, data);
-         console.log(response);
+
+         if (response.status === 200) {
+            setResponse((prevResponse) => 
+               prevResponse.map((item) => 
+                 item.map((dataItem) => {
+                   if (dataItem._id === id) {
+                     const { _id, ...rest } = dataItem;
+                     return rest;
+                   }
+                   return dataItem;
+                 })
+               )
+             );
+            toastr.success('Data Approved Successfully');
+         }
          
       } catch (error) {
          console.error("Failed to submit data:", error);
       }
    };
+
+   const DeleteData = async () => {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/deleteAll`);
+      if (response.status === 200) {
+         toastr.success('Data Deleted Successfully');
+      }
+      
+   }
    useEffect(()=> {
 
    }, [response])
@@ -62,6 +86,9 @@ export default function Home() {
                <button className="px-10 py-3 bg-cyan-400 text-white rounded-lg" onClick={() => submitData()}>
                   Submit
                </button>
+               <button className="ml-20 px-10 py-3 bg-red-400 text-white rounded-lg" onClick={() => DeleteData()}>
+               Delete All
+               </button>
             </div>
             <div className="w-full text-center px-10">
                <p className="text-base font-bold">Results {response.length > 0 && response.length} match</p>
@@ -75,7 +102,7 @@ export default function Home() {
                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
                               </svg>
                            </summary>
-                           <p className="text-gray-500">
+                           <div className="text-gray-500">
                                  {item.map((data, index) => {
                                     const { _id, ...filteredData } = data;
                                     return (
@@ -99,7 +126,7 @@ export default function Home() {
                                        </div>
                                     );
                                  })}
-                           </p>
+                           </div>
                         </details>
                      ))}
                </section>
